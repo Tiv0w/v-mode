@@ -550,7 +550,7 @@ Optional argument BUILD ."
 
 ;;;###autoload
 (setq auto-mode-alist
-      (cons '("\\(\\.v?v\\|\\.vsh\\)$" . v-mode) auto-mode-alist))
+  (cons '("\\(\\.v?v\\|\\.vsh\\|/v\\.mod\\)\\'" . v-mode) auto-mode-alist))
 
 ;;
 (provide 'v-mode)
