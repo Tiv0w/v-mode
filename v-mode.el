@@ -57,6 +57,38 @@
 
 (defvar v-mode-hook nil)
 
+(defcustom v-after-save-hook 'v-after-save-method
+  "Default method to handle `v fmt' invocation after save."
+  :type 'function
+  :group 'v-mode)
+
+;;; Customization
+
+(defgroup v-mode nil
+  "Support for V code."
+  :link '(url-link "https://vlang.io/")
+  :group 'languages)
+
+(defcustom v-indent-offset 4
+  "Indent V code by this number of spaces."
+  :type 'integer
+  :group 'v-mode
+  :safe #'integerp)
+
+(defcustom v-use-ctags nil
+  "Use CTAGS with V."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'v-mode)
+
+(defcustom v-format-on-save nil
+  "Format future V buffers after saving using `v fmt'."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'v-mode)
+
+;;; Syntax
+
 (defconst v-mode-syntax-table
   (let ((table (make-syntax-table)))
     ;; fontify " using v-keywords
@@ -469,13 +501,15 @@ Optional argument BUILD ."
       :ignore-auto
       :noconfirm)))
 
-(defun v-after-save-hook ()
+(defun v-after-save-method ()
   "After save hook."
   (when (eq major-mode 'v-mode)
-    (v-format-buffer)
-    (if (not (executable-find "ctags"))
-      (message "Could not locate executable '%s'" "ctags")
-      (v-build-tags))))
+    (when v-format-on-save
+      (v-format-buffer))
+    (when v-use-ctags
+      (if (not (executable-find "ctags"))
+        (message "Could not locate executable '%s'" "ctags")
+        (v-build-tags)))))
 
 ;;;###autoload
 (define-derived-mode v-mode prog-mode
@@ -490,7 +524,7 @@ Optional argument BUILD ."
   (setq-local comment-start-skip "\\(//+\\|/\\*+\\)\\s *")
   ;;
   (setq-local indent-tabs-mode nil)
-  (setq-local tab-width 4)
+  (setq-local tab-width v-indent-offset)
   (setq-local buffer-file-coding-system 'utf-8-unix)
   ;;
   (setq-local electric-indent-chars (append "{}():;," electric-indent-chars))
@@ -510,8 +544,9 @@ Optional argument BUILD ."
        ("import" "[ \t]*import[ \t]+\\([a-zA-Z0-9_]+\\)" 1)))
   (imenu-add-to-menubar "Index")
   ;;
-  (add-hook 'after-save-hook #'v-after-save-hook nil t)
-  (v-load-tags))
+  (add-hook 'after-save-hook v-after-save-hook nil t)
+  (when v-use-ctags
+    (v-load-tags)))
 
 ;;;###autoload
 (setq auto-mode-alist
